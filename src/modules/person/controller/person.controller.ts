@@ -1,6 +1,7 @@
-import { Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { PersonService } from '../service/person.service';
 import { Person } from '../entities/person.entity';
+import { createHash } from 'crypto';
 
 @Controller()
 export class PersonController {
@@ -18,11 +19,10 @@ export class PersonController {
   // }
 
   @Post('/person')
-  async postPerson(): Promise<Person> {
+  async postPerson(@Body() person: Person): Promise<Person> {
     return this.personService.create({
-      firstName: 'Arthur',
-      lastName: 'Hoengen',
-      password: 'Teste',
+      ...person,
+      password: createHash('sha256').update(person.password).digest('hex'),
     });
   }
 
@@ -31,8 +31,8 @@ export class PersonController {
   //   return this.personService.getHello();
   // }
 
-  // @Delete('/person/:id')
-  // deletePerson(@Param('id') id: string): string {
-  //   return this.personService.getHello();
-  // }
+  @Delete('/person/:id')
+  async deletePerson(@Param('id') id: number): Promise<Person> {
+    return this.personService.delete(id);
+  }
 }

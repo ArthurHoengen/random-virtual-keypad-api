@@ -18,7 +18,9 @@ export class PersonService {
     return await this.personRepository.save(person);
   }
 
-  async this.delete(id: number): Promise<Person> {
-    const response = 
+  async delete(id: number): Promise<Person> {
+    const person = await this.personRepository.findOneBy({ id: id });
+    await this.personRepository.delete(person);
+    return person;
   }
 }
