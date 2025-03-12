@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Digit } from '../entities/digit.entity';
 import { Person } from '../../person/entities/person.entity';
 import { createHash, createCipheriv, createDecipheriv } from 'crypto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class DigitService {
@@ -16,6 +17,7 @@ export class DigitService {
     private digitRepository: Repository<Digit>,
     @InjectRepository(Person)
     private personRepository: Repository<Person>,
+    private configService: ConfigService,
   ) {}
 
   private generateCombinations(
@@ -40,10 +42,13 @@ export class DigitService {
 
   private encryptObject(obj) {
     const key = Buffer.from(
-      'dDNeJXx6kALUwgKkywRMVvLV2XeNE+Ehdq13ZrAK2f8=',
+      String(this.configService.get('ENCRYPTION_KEY')),
       'base64',
     ); // 32 bytes
-    const iv = Buffer.from('b1b26cb8b662ed6fa4ed0d8f', 'hex'); // 12 b3
+    const iv = Buffer.from(
+      String(this.configService.get('ENCRYPTION_IV')),
+      'hex',
+    ); // 12 bytes
     const jsonString = JSON.stringify(obj);
     const cipher = createCipheriv('aes-256-gcm', key, iv);
 
