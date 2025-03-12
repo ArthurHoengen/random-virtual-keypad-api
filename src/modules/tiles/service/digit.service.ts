@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Digit } from '../entities/digit.entity';
 import { Person } from '../../person/entities/person.entity';
-import { createHash } from 'crypto';
+import { createHash, createCipheriv, createDecipheriv } from 'crypto';
 
 @Injectable()
 export class DigitService {
@@ -38,7 +38,43 @@ export class DigitService {
     return result;
   }
 
-  async findOne(): Promise<Digit> {
+  private encryptObject(obj) {
+    const key = Buffer.from(
+      'dDNeJXx6kALUwgKkywRMVvLV2XeNE+Ehdq13ZrAK2f8=',
+      'base64',
+    ); // 32 bytes
+    const iv = Buffer.from('b1b26cb8b662ed6fa4ed0d8f', 'hex'); // 12 bytes
+    const jsonString = JSON.stringify(obj); // Convertendo para string
+    const cipher = createCipheriv('aes-256-gcm', key, iv);
+
+    let encrypted = cipher.update(jsonString, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    const authTag = cipher.getAuthTag().toString('hex'); // Tag de autenticação
+
+    return {
+      encryptedData: encrypted,
+      authTag: authTag,
+    };
+  }
+
+  // 🔓 Função para descriptografar um objeto
+  private decryptObject(encryptedData, authTag): any {
+    const key = Buffer.from(
+      'dDNeJXx6kALUwgKkywRMVvLV2XeNE+Ehdq13ZrAK2f8=',
+      'base64',
+    ); // 32 bytes
+    const iv = Buffer.from('b1b26cb8b662ed6fa4ed0d8f', 'hex'); // 12 bytes
+    const decipher = createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+
+    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    return JSON.parse(decrypted); // Convertendo de volta para objeto
+  }
+
+  async findOne(): Promise<any> {
     let sequence = await this.digitRepository
       .createQueryBuilder('seq')
       .where('seq.used = false')
@@ -58,10 +94,11 @@ export class DigitService {
     }
     await this.digitRepository.update(sequence.id, { used: true });
 
-    return sequence;
+    return this.encryptObject(sequence);
   }
 
-  async login(password: Array<Array<number>>) {
+  async login(encryptedData: string, authTag: string): Promise<Person> {
+    const { password } = this.decryptObject(encryptedData, authTag);
     if (!password || password.length <= 0) {
       throw new BadRequestException('No password informed');
     }
