@@ -43,14 +43,14 @@ export class DigitService {
       'dDNeJXx6kALUwgKkywRMVvLV2XeNE+Ehdq13ZrAK2f8=',
       'base64',
     ); // 32 bytes
-    const iv = Buffer.from('b1b26cb8b662ed6fa4ed0d8f', 'hex'); // 12 bytes
-    const jsonString = JSON.stringify(obj); // Convertendo para string
+    const iv = Buffer.from('b1b26cb8b662ed6fa4ed0d8f', 'hex'); // 12 b3
+    const jsonString = JSON.stringify(obj);
     const cipher = createCipheriv('aes-256-gcm', key, iv);
 
     let encrypted = cipher.update(jsonString, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
-    const authTag = cipher.getAuthTag().toString('hex'); // Tag de autenticação
+    const authTag = cipher.getAuthTag().toString('hex');
 
     return {
       encryptedData: encrypted,
@@ -58,7 +58,6 @@ export class DigitService {
     };
   }
 
-  // 🔓 Função para descriptografar um objeto
   private decryptObject(encryptedData, authTag): any {
     const key = Buffer.from(
       'dDNeJXx6kALUwgKkywRMVvLV2XeNE+Ehdq13ZrAK2f8=',
@@ -71,7 +70,7 @@ export class DigitService {
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
 
-    return JSON.parse(decrypted); // Convertendo de volta para objeto
+    return JSON.parse(decrypted); 
   }
 
   async findOne(): Promise<any> {
@@ -82,10 +81,8 @@ export class DigitService {
       .getOne();
 
     if (!sequence) {
-      // Resetar todas as sequências para 'used = false'
       await this.digitRepository.update({}, { used: false });
 
-      // Buscar uma nova sequência após o reset
       sequence = await this.digitRepository
         .createQueryBuilder('seq')
         .where('seq.used = false')
